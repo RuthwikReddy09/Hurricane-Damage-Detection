@@ -12,6 +12,7 @@ import os
 
 app=Flask(__name__)
 app.config['IMAGE_UPLOADS']='C:\\Users\\druth\\OneDrive\\Desktop\\Projects\\Hurricane_Damage\\static\\Images'
+app.config['ALLOWED_EXTENSIONS']=['.jpeg']
 
 model = load_model('model.h5')
 labels=['Not Damaged','Damaged']
@@ -33,9 +34,6 @@ def predict(path):
     return labels[y_pred[0][0]]
 
 
-# pred=predict('-93.571101_30.992109000000003.jpeg')
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -44,13 +42,19 @@ def index():
 def detect():
     if request.method=="POST":
         image=request.files['file']
-        image.save(os.path.join(app.config['IMAGE_UPLOADS'],secure_filename(image.filename)))
-        pred=predict(os.path.join(app.config['IMAGE_UPLOADS'],secure_filename(image.filename)))
-        data={
-            'prediction':f'{pred}',
-            'file':f"{secure_filename(image.filename)}"
-        }
-        return render_template('detect.html',data=data)
+        extension=os.path.splitext(image.filename)[1]
+        if extension not in app.config['ALLOWED_EXTENSIONS']:
+            return "only .jpeg extension is allowed"
+        if image:
+            image.save(os.path.join(app.config['IMAGE_UPLOADS'],secure_filename(image.filename)))
+            pred=predict(os.path.join(app.config['IMAGE_UPLOADS'],secure_filename(image.filename)))
+            data={
+                'prediction':f'{pred}',
+                'file':f"{secure_filename(image.filename)}"
+            }
+            return render_template('detect.html',data=data)
+        else:
+            return "File Not Selected"
 
 if __name__=='__main__':
     app.run()
